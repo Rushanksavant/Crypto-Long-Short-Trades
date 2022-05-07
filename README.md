@@ -21,24 +21,26 @@
 - Profits will be in eth (can be exchanged)
 
 ## Smart Contracts:
-- Imports(for both the contracts):
-@openzeppelin/contracts/token/ERC20/IERC20.sol
-Compound
-interface CErc20
-interface CEth
-interface Comptroller
-interface PriceFeed
-Uniswap
-interface IUniswapV2Router
+- **Imports(for both the contracts):**
+  - @openzeppelin/contracts/token/ERC20/IERC20.sol
+  - Compound
+    - interface CErc20
+    - interface CEth
+    - interface Comptroller
+    - interface PriceFeed
+  - Uniswap
+    - interface IUniswapV2Router
 
-### contractLong
-- ***Contracts used:***
+- ***Contracts used(for both the contracts):***
   - CEth
-  - CErc20
-  - IERC20
+  - CErc20 (cDai)
+  - IERC20 (DAI)
   - Comptroller
   - PriceFeed
   - IUniswapV2Router
+  - IERC20 (weth)
+
+### contractLong
 
 - ***constructor(address _cEth, address _cTokenBorrow, address _tokenBorrow, uint256 _decimals){}***
 	- contract pointer assignments
@@ -58,10 +60,11 @@ interface IUniswapV2Router
 	- swapind all DAI for eth on uniswap
 - ***function claimProfits(uint256 uniswapTransactionDeadline) external onlyOwner{}***
 	- sell all eth from contract address on uniswap for DAI
-	- get borrowed balance on compound (using ctoken/cDai), borrowed balance + interest on borrow
+	- get current borrowed balance on compound (using ctoken/cDai), borrowed balance + interest on borrow
 	- approving cDai to spend all DAI from contract address
 	- repaying borrow
-	- get balance of underlying(eth) supplied to compound (using ctoken/ceth), supplied balance + interest on supply
+	- get current balance of underlying(eth) supplied to compound (using ctoken/ceth), supplied balance + interest on supply
+	- redeem underlying
 - ***function withdraw_DAI() external onlyOwner {}***
 	- withdraw DAI(profits) to contract deploywer's address
 - ***function getSuppliedBalance() external returns (uint256) {}***
@@ -70,3 +73,37 @@ interface IUniswapV2Router
 	- returns borrow balance (suing ctoken/cDai), borrowed balance + interest on borrow
 - ***function getAccountLiquidity() external view returns (uint256 liquidity, uint256 shortfall) {}***
 	- returns account liquidity and shortfall (using comptroller)
+
+
+### contractShort
+
+- ***constructor (address _cEth, address _cDAI, address _DAI, uint256 _decimals) {}***
+	- contract pointer assignments
+	- entering the CDai market 
+	- assgining owner to deployer
+- ***receive() external payable {}***
+- ***modifier onlyOwner() {}***
+- ***function supply(uint256 amountDAI) external payable {}***
+	- approve cDai to spend all DAI from contract address
+	- supply DAI to compound and get cDai
+- ***function getMaxBorrow() public view returns (uint256) {}***
+	- same as contractLong, but this time pricefeed is used to get price of ceth
+- ***function goShort_ETH( uint256 borrowAmount, uint256 uniswapTransactionDeadline) external onlyOwner {}***
+	- borrow eth (using ceth)
+	- swap al the borrowed eth on uniswap for as many DAI as possible
+- ***function claimProfits(uint256 uniswapTransactionDeadline) external onlyOwner {}***
+	- approve uniswap router to spend all DAI from contract balance
+	- exchange all DAI for ETH
+	- get current borrow balance (using ceth), borrowed balance + interest on borrow
+	- repay the borrow
+	- get current balance of underlying (DAI) supplied, supplied balance + interest on supply
+	- redeem underlying
+- ***function withdraw_ETH() external onlyOwner {}***
+	- transfer all eth from contract balance to contract deployer
+- ***function getSuppliedBalance() external returns (uint256) {}***
+	- returns balance of underlying (using cDai), supplied balance + interest on supply
+- ***function getBorrowBalance() external returns (uint256) {}***
+	- returns borrow balance (using ceth), borrowed balance + interest on borrow
+- ***function getAccountLiquidity() external view returns (uint256 liquidity, uint256 shortfall) {}*** 
+	- returns account liquidity and shortfall (using comptroller)
+
