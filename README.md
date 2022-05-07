@@ -75,7 +75,8 @@
 	- returns account liquidity and shortfall (using comptroller)
 
 
-### contractShort
+### contractShort 
+(uses another contract ***swapETHforDAI.sol***, to swap eth for dai) 
 
 - ***constructor (address _cEth, address _cDAI, address _DAI, uint256 _decimals) {}***
 	- contract pointer assignments
