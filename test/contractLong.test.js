@@ -44,7 +44,7 @@ describe("contractLong", function () {
     // goLong_ETH takes 2 arguments: 
     // borrowAmount -> borrowing 50% of max borrow limit (0.5*max_borrow)
     // uniswapTransactionDeadline -> keeping 10 mins as deadline (Math.floor(Date.now() / 1000) + 60 * 10)
-    await contractLong.goLong_ETH(parseInt(0.5 * max_borrow), Math.floor(Date.now() / 1000) + 60 * 10);
+    // await contractLong.goLong_ETH(parseInt(0.5 * max_borrow), Math.floor(Date.now() / 1000) + 60 * 10);
 
     // claiming profits
     // await contractLong.claimProfits();
@@ -63,6 +63,7 @@ describe("contractLong", function () {
   })
 
   it("Verify Long operation", async function () {
+    await contractLong.goLong_ETH(parseInt(0.5 * max_borrow), Math.floor(Date.now() / 1000) + 60 * 10);
     const ETH_recieved = await provider.getBalance(contractLong.address)
     assert.operator(ETH_recieved, '>', 0); // contract address recieves eth after swapping borrowed DAI
   })

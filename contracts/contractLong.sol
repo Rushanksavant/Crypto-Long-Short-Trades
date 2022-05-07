@@ -20,6 +20,7 @@ contract contractLong {
     CErc20 public cTokenBorrow;
     IERC20 public tokenBorrow;
     uint256 public decimals;
+    address public owner;
 
     // contracts we will need:
     Comptroller public comptroller =
@@ -47,9 +48,16 @@ contract contractLong {
             comptroller.enterMarkets(cTokens)[0] == 0,
             "Comptroller.enterMarkets failed."
         ); // comptroller.enterMarkets(cTokens) returns array of error codes
+
+        owner = msg.sender;
     }
 
     receive() external payable {} // so that this contract can recieve ether
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this");
+        _;
+    }
 
     // Supply ETH to Compound, which will become our collateral.
     function supply() external payable {
@@ -70,9 +78,9 @@ contract contractLong {
 
         uint256 price_USD = pricefeed.getUnderlyingPrice(address(cTokenBorrow));
 
-        uint256 maxBorrowAmount = (liquidity) / price_USD;
+        uint256 maxBorrowAmount = (liquidity) / price_USD; // liquidity is not scaled up here
 
-        return maxBorrowAmount;
+        return maxBorrowAmount; // we need to scale it up by 10**18(decimals) while using for borrow amount
     }
 
     // Going long on eth:
@@ -81,15 +89,13 @@ contract contractLong {
     // get the amount of asset present with this contract address
     // approve uniswap(router contract) to use asset amount for transaction
     // swap asset for weth:
-    // get reserves from weth-asset(dai) pair contract
-    // use getAmountOut from router to know exact amount of weth which can be recieved against asset(Dai)
     // swaping on uniswap using swapExactETHForTokens from router
     function goLong_ETH(
         uint256 borrowAmount,
         uint256 uniswapTransactionDeadline
-    ) external {
+    ) external onlyOwner {
         require(
-            cTokenBorrow.borrow(borrowAmount) == 0,
+            cTokenBorrow.borrow(borrowAmount * (10**decimals)) == 0,
             "Cannot borrow specified amount of asset, check colleteral"
         );
 
@@ -115,10 +121,13 @@ contract contractLong {
 
     // After the ETH price in increased, we will claim the profits:
     // sell eth back to uniswap, in exchange of asset(Dai)
-    // putting amountOutMin as 1, previously we used getAmountOut to find amountOutMin
+    // putting amountOutMin as 1,
     // repaying the total borrowed balance(borrowed amount + borrow interest) to Compound
     // redeeming the underlying Eth (which was previously supplied as collateral)
-    function claimProfits(uint256 uniswapTransactionDeadline) external {
+    function claimProfits(uint256 uniswapTransactionDeadline)
+        external
+        onlyOwner
+    {
         // sell eth
         address[] memory path = new address[](2);
         path[0] = address(Weth);
@@ -147,6 +156,11 @@ contract contractLong {
         // redeem
         uint256 supplied_current = cEth.balanceOfUnderlying(address(this));
         require(cEth.redeemUnderlying(supplied_current) == 0, "Redeem failed");
+    }
+
+    // our profits are in form of DAI, following function will help us withdraw them:
+    function withdraw_DAI() external onlyOwner {
+        tokenBorrow.transfer(msg.sender, tokenBorrow.balanceOf(address(this)));
     }
 
     // following functions are to track the current borrow balance, underlying balance and liquidity status

@@ -12,6 +12,7 @@ contract contractShort {
     CErc20 public cDAI;
     IERC20 public DAI;
     uint256 public decimals;
+    address public owner;
 
     // contracts we will need:
     Comptroller public comptroller =
@@ -33,17 +34,6 @@ contract contractShort {
         cDAI = CErc20(_cDAI); // cDAI
         DAI = IERC20(_DAI); // DAI
         decimals = _decimals;
-    }
-
-    receive() external payable {} // this contract recieves eth while borrowing
-
-    // Supply DAI to Compound, which will become our collateral. And enter DAI market to borrow other assets against collateral
-    function supply(uint256 amountDAI) external payable {
-        // Approve transfer of underlying
-        DAI.approve(address(cDAI), amountDAI);
-
-        // Supply DAI as collateral, get cDAI in return
-        require(cDAI.mint(amountDAI) == 0, "Supply failed");
 
         // Enter the market so we can borrow another type of asset(eth)
         address[] memory cTokens = new address[](1);
@@ -52,6 +42,24 @@ contract contractShort {
             comptroller.enterMarkets(cTokens)[0] == 0,
             "Comptroller.enterMarkets failed."
         );
+
+        owner = msg.sender;
+    }
+
+    receive() external payable {} // this contract recieves eth while borrowing
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this");
+        _;
+    }
+
+    // Supply DAI to Compound, which will become our collateral. And enter DAI market to borrow other assets against collateral
+    function supply(uint256 amountDAI) external payable {
+        // Approve transfer of underlying
+        DAI.approve(address(cDAI), amountDAI);
+
+        // Supply DAI as collateral, get cDAI in return
+        require(cDAI.mint(amountDAI) == 0, "Supply failed");
     }
 
     // To know the maximum borrow amount possible using our collateral:
@@ -68,9 +76,9 @@ contract contractShort {
 
         uint256 price_USD = pricefeed.getUnderlyingPrice(address(cEth));
 
-        uint256 maxBorrowAmount = (liquidity) / price_USD;
+        uint256 maxBorrowAmount = (liquidity) / price_USD; // liquidity is not scaled up here
 
-        return maxBorrowAmount;
+        return maxBorrowAmount; // we need to scale it up by 10**18(decimals) while using for borrow amount
     }
 
     // Going short on eth:
@@ -79,9 +87,9 @@ contract contractShort {
     function goShort_ETH(
         uint256 borrowAmount,
         uint256 uniswapTransactionDeadline
-    ) external {
+    ) external onlyOwner {
         require(
-            cEth.borrow(borrowAmount) == 0,
+            cEth.borrow(borrowAmount * (10**decimals)) == 0,
             "Cannot borrow specified amount of eth, check colleteral"
         );
 
@@ -104,7 +112,10 @@ contract contractShort {
     // sell DAI back to uniswap, in exchange of eth
     // repaying the total borrowed balance(borrowed amount + borrow interest) to Compound
     // redeeming the underlying DAI (which was previously supplied as collateral)
-    function claimProfits() external {
+    function claimProfits(uint256 uniswapTransactionDeadline)
+        external
+        onlyOwner
+    {
         // sell DAI
         uint256 daiAmount = DAI.balanceOf(address(this));
         DAI.approve(address(uniswapRouter), daiAmount);
@@ -117,7 +128,7 @@ contract contractShort {
             1,
             path,
             address(this),
-            block.timestamp
+            uniswapTransactionDeadline
         );
 
         // repay borrow
@@ -128,6 +139,11 @@ contract contractShort {
         // redeem
         uint256 supplied_current = cDAI.balanceOfUnderlying(address(this));
         require(cDAI.redeemUnderlying(supplied_current) == 0, "Redeem failed");
+    }
+
+    // our profits are in form of ETH, following function will help us withdraw them:
+    function withdraw_ETH() external onlyOwner {
+        payable(owner).transfer(address(this).balance);
     }
 
     // following functions are to track the current borrow balance, underlying balance and liquidity status

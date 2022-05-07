@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { assert } = require('chai')
 const { ethers } = require("hardhat");
-
+const { BigNumber } = require("ethers")
 const DAI_ABI = require("./ABIs/DAI_ABI.json");
 const cDAI_ABI = require("./ABIs/cDAI_ABI.json");
 const cEth_ABI = require("./ABIs/cEth_ABI.json");
@@ -40,7 +40,7 @@ describe("contractShort", function () {
                 .then(contract => contract.deploy());
         await swapETHforDAI.deployed();
 
-        // Swap 1 ETH for DAI
+        // Swap ETH for DAI
         await swapETHforDAI.connect(owner).swapExactETHForTokens(
             0, // amountOutMin
             "0x6b175474e89094c44da98b954eedeac495271d0f", //dai
@@ -55,7 +55,7 @@ describe("contractShort", function () {
         max_borrow = await contractShort.getMaxBorrow();
 
         // going short on eth
-        await contractShort.goShort_ETH(parseInt(0.5 * max_borrow), Math.floor(Date.now() / 1000) + 60 * 10);
+        // await contractShort.goShort_ETH(parseInt(0.5 * max_borrow), Math.floor(Date.now() / 1000) + 60 * 10);
     });
 
     it("Verify cDAI mint", async function () { // this test verifies if the function caller is able to supply DAI to Compound and the contract address is able to recieve the cDAI
@@ -70,6 +70,9 @@ describe("contractShort", function () {
     });
 
     it("Verify Short operation", async function () {
+        // going short on eth
+        console.log(max_borrow)
+        await contractShort.goShort_ETH(parseInt(0.5 * max_borrow), Math.floor(Date.now() / 1000) + 60 * 10);
         const DAI_recieved = await DAI.balanceOf(contractShort.address)
         // console.log(DAI_recieved)
         assert.operator(DAI_recieved, '>', 0); // contract address recieves DAI after swapping borrowed ETH
