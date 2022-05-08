@@ -40,7 +40,7 @@
   - IUniswapV2Router
   - IERC20 (weth)
 
-### contractLong
+### 1. contractLong
 
 - ***constructor(address _cEth, address _cTokenBorrow, address _tokenBorrow, uint256 _decimals){}***
 	- contract pointer assignments
@@ -75,7 +75,7 @@
 	- returns account liquidity and shortfall (using comptroller)
 
 
-### contractShort 
+### 2. contractShort 
 (uses another contract ***swapETHforDAI.sol***, to swap eth for dai) 
 
 - ***constructor (address _cEth, address _cDAI, address _DAI, uint256 _decimals) {}***
