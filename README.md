@@ -10,6 +10,9 @@
 - Keep the difference(and interests earned on Compound) as profits
 - Profits will be in stable coin (can be exchanged)
 
+
+![dapp screenshot](https://github.com/Rushanksavant/Crypto-Long-Short-Trades/blob/main/imgs/long.PNG)
+
 ## Going Short on ETH:
 - Supply stable coin to Compound Protocol 
 - Borrow eth from Compound Protocol
@@ -19,6 +22,9 @@
 - Repay borrowed eth to Compound(along with borrow interest)
 - Keep the difference(and interests earned on Compound) as profits
 - Profits will be in eth (can be exchanged)
+
+![dapp screenshot](https://github.com/Rushanksavant/Crypto-Long-Short-Trades/blob/main/imgs/short.PNG)
+
 
 ## Smart Contracts:
 - **Imports(for both the contracts):**
