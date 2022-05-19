@@ -1,4 +1,5 @@
 # Crypto-Long-Short-Trades
+Dapp is running on the mainnet fork in local machine. 
 
 ## Going Long on ETH:
 - Supply eth to Compound Protocol 
